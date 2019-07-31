@@ -126,7 +126,7 @@ module RV2T_execution_unit (
         wire  [`XLEN - 1 : 0]                                   Y_unsigned;
         
         wire  [2 : 0]                                           funct3_in;
-        wire  [2 : 0]                                           funct3;
+        reg   [2 : 0]                                           funct3;
         reg   [2 : 0]                                           funct3_mul_div;
         
         wire  [2 : 0]                                           width; // load/store width, only support up to 32 bits at this moment 
@@ -138,7 +138,7 @@ module RV2T_execution_unit (
         wire  [4 : 0]                                           shamt;
         
         wire                                                    SRL0_SRA1;
-        wire                                                    ADD0_SUB1;
+        reg                                                     ADD0_SUB1;
 
         reg [`XLEN - 1 : 0]                                     LUI_out;
         reg [`XLEN - 1 : 0]                                     AUIPC_out;
@@ -195,7 +195,6 @@ module RV2T_execution_unit (
             assign I_immediate_12  = IR_in [31 : 20];
             assign U_immediate_20  = IR_in [31 : 12];
             
-            
             assign shamt = Y [4 : 0];
         //---------------------------------------------------------------------
         //  funct3
@@ -203,9 +202,7 @@ module RV2T_execution_unit (
             assign funct3_in = IR_in [14 : 12];
             
             assign opcode = IR_out [6 : 2];
-            assign funct3 = IR_out [14 : 12];
             assign SRL0_SRA1 = IR_out [30];
-            assign ADD0_SUB1 = opcode[3] ? IR_out [30] : 1'b0;  // distinguish between addi/add/sub
             
             assign width  = funct3 [2 : 0];
             
@@ -242,12 +239,40 @@ module RV2T_execution_unit (
                     mul_div_done <= 0;
                     
                 end else begin
-                    
-                    X <= rs1_in;
-                    Y <= ctl_load_Y_from_imm_12 ? {{20{I_immediate_12[11]}}, I_immediate_12} : rs2_in;
-                    
+
                     PC_out <= PC_in;
                     IR_out <= IR_in;
+
+                    if (ctl_AUIPC) begin
+                        X <= PC_in;
+                    end
+                    else begin
+                        X <= rs1_in;
+                    end
+
+                    if (ctl_load_Y_from_imm_12) begin
+                        Y <= {{20{I_immediate_12[11]}}, I_immediate_12};
+                    end
+                    else if (ctl_AUIPC) begin
+                        Y <= {U_immediate_20, 12'd0};
+                    end
+                    else begin
+                        Y <= rs2_in;
+                    end
+
+                    if (ctl_AUIPC) begin
+                        funct3 = `ALU_ADD_SUB;
+                    end
+                    else begin
+                        funct3 = IR_in [14 : 12];
+                    end
+
+                    if (ctl_AUIPC) begin
+                        ADD0_SUB1 = 1'b0;
+                    end
+                    else begin
+                        ADD0_SUB1 = IR_in[5] ? IR_in [30] : 1'b0;  // distinguish between addi/add/sub
+                    end
                     
                     exe_enable_d1 <= exe_enable;
                     
@@ -335,10 +360,8 @@ module RV2T_execution_unit (
             always @(posedge clk, negedge reset_n) begin : lui_auipc_proc
                 if (!reset_n) begin
                     LUI_out   <= 0;
-                    AUIPC_out <= 0;
                 end else if (exe_enable) begin
                     LUI_out   <= {U_immediate_20, 12'd0};
-                    AUIPC_out <= {U_immediate_20, 12'd0} + PC_in;
                 end
             end
                 
@@ -615,10 +638,6 @@ module RV2T_execution_unit (
                 case (1'b1) // synopsys parallel_case  
                     reg_ctl_LUI : begin
                         data_out = LUI_out;
-                    end
-                    
-                    reg_ctl_AUIPC : begin
-                        data_out = AUIPC_out;
                     end
                     
                     reg_ctl_JAL | reg_ctl_JALR : begin
