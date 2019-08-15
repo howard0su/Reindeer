@@ -503,8 +503,10 @@ module RV2T_execution_unit (
         
         generate
         
-            assign x_mul_div_signed0_unsigned1 = funct3[2] ? funct3[0] : funct3[1] & funct3[0];
-            assign y_mul_div_signed0_unsigned1 = funct3[2] ? funct3[0] : funct3[1];
+            assign x_mul_div_signed0_unsigned1 = funct3 == `RV32M_MUL || funct3 == `RV32M_MULHU || 
+                                                funct3 == `RV32M_DIVU || funct3 == `RV32M_REMU;
+            assign y_mul_div_signed0_unsigned1 = funct3 == `RV32M_MUL || funct3 == `RV32M_MULHSU || funct3 == `RV32M_MULHU ||
+                                                funct3 == `RV32M_DIVU || funct3 == `RV32M_REMU;
             assign mul_div_enable = exe_enable_d1 & reg_ctl_MUL_DIV_FUNCT3;
             assign mul_div_active = reg_ctl_MUL_DIV_FUNCT3;
             

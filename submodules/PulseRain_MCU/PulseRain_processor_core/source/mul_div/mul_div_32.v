@@ -52,8 +52,8 @@ module mul_div_32(
         wire signed [31 : 0]        x_abs;
         wire signed [31 : 0]        y_abs;
         
-        reg [31 : 0]                x_mul;
-        reg [31 : 0]                y_mul;
+        reg unsigned [31 : 0]                x_mul;
+        reg unsigned [31 : 0]                y_mul;
         
         
         wire                        x_max_neg_flag;
@@ -123,7 +123,11 @@ module mul_div_32(
                 end
                 
                 z_i <= x_mul * y_mul;
-                z <= z_i;
+
+                if (x_signed0_unsigned1 ^ y_signed0_unsigned1)
+                    z <= -z_i;
+                else
+                    z <= z_i;
                 
             end    
         end

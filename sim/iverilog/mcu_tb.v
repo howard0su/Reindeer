@@ -144,7 +144,7 @@ initial begin
         #1
 
         // open the file
-        File = $fopen("../compliance/I-ADD-01.elf", "rb");
+        File = $fopen("../compliance/MUL.elf", "rb");
         if (!File) begin
             $display("Could not open \"result.dat\"");
             $finish;
