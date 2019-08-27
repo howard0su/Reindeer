@@ -14,10 +14,10 @@ module RV2T_compressed_decode
     illegal_instr_o = 1'b0;
     instr_o         = '0;
 
-    unique case (instr_i[1:0])
+    case (instr_i[1:0])
       // C0
       2'b00: begin
-        unique case (instr_i[15:13])
+        case (instr_i[15:13])
           3'b000: begin
             // c.addi4spn -> addi rd', x2, imm
             instr_o = {2'b0, instr_i[10:7], instr_i[12:11], instr_i[5], instr_i[6], 2'b00, 5'h02, 3'b000, 2'b01, instr_i[4:2], `CMD_OP_IMM};
@@ -62,7 +62,7 @@ module RV2T_compressed_decode
 
       // C1
       2'b01: begin
-        unique case (instr_i[15:13])
+        case (instr_i[15:13])
           3'b000: begin
             // c.addi -> addi rd, rd, nzimm
             // c.nop
@@ -96,7 +96,7 @@ module RV2T_compressed_decode
           end
 
           3'b100: begin
-            unique case (instr_i[11:10])
+            case (instr_i[11:10])
               2'b00,
               2'b01: begin
                 // 00: c.srli -> srli rd, rd, shamt
@@ -112,7 +112,7 @@ module RV2T_compressed_decode
               end
 
               2'b11: begin
-                unique case ({instr_i[12], instr_i[6:5]})
+                case ({instr_i[12], instr_i[6:5]})
                   3'b000: begin
                     // c.sub -> sub rd', rd', rs2'
                     instr_o = {2'b01, 5'b0, 2'b01, instr_i[4:2], 2'b01, instr_i[9:7], 3'b000, 2'b01, instr_i[9:7], `CMD_OP};
@@ -156,7 +156,7 @@ module RV2T_compressed_decode
 
       // C2
       2'b10: begin
-        unique case (instr_i[15:13])
+        case (instr_i[15:13])
           3'b000: begin
             // c.slli -> slli rd, rd, shamt
             instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b001, instr_i[11:7], `CMD_OP_IMM};
