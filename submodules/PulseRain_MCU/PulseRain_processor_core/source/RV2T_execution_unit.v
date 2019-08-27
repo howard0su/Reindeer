@@ -108,7 +108,7 @@ module RV2T_execution_unit (
         output reg                                              ebreak_active,
         output reg                                              mret_active,
         output wire                                             mul_div_active,
-        output reg                                              mul_div_done
+        output wire                                             mul_div_done
 ); 
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -208,6 +208,7 @@ module RV2T_execution_unit (
             assign csr_uimm = IR_in [19 : 15];
             assign csr_uimm_ext = {27'd0, csr_uimm};
             
+            assign mul_div_done = (`ENABLE_HW_MUL_DIV) ? mul_div_enable_out : 1'b0;
         //---------------------------------------------------------------------
         //  X/Y register
         //---------------------------------------------------------------------
@@ -235,8 +236,6 @@ module RV2T_execution_unit (
                     
                     exe_enable_d1 <= 0;
                     
-                    mul_div_done <= 0;
-                    
                 end else begin
                     
                     X <= rs1_in;
@@ -246,9 +245,7 @@ module RV2T_execution_unit (
                     IR_out <= IR_in;
                     
                     exe_enable_d1 <= exe_enable;
-                    
-                    mul_div_done <= (`ENABLE_HW_MUL_DIV) ? mul_div_enable_out : 1'b0; 
-                    
+
                     if (exe_enable) begin
                         
                         reg_ctl_LUI    <= ctl_LUI;
