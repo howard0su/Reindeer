@@ -39,8 +39,9 @@ module RV2T_instruction_decode (
      // interface for the instruction fetch
      //=====================================================================
         input wire                                              enable_in,
-        input wire [`XLEN - 1 : 0]                              IR_in,
+        input wire [`XLEN - 1 : 2]                              IR_in,
         input wire [`PC_BITWIDTH - 1 : 0]                       PC_in,
+        input wire                                              is_compressed_in,
 
      //=====================================================================
      // interface for register read
@@ -82,7 +83,8 @@ module RV2T_instruction_decode (
         output reg                                              ctl_MRET,
         output reg                                              ctl_WFI,
 
-        output reg                                              exception_illegal_instruction
+        output reg                                              exception_illegal_instruction,
+        output reg                                              is_compressed_out
 );
     
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -140,9 +142,11 @@ module RV2T_instruction_decode (
                     IR_out <= 0;
                     PC_out <= 0;
                     illegal <= 0;
+                    is_compressed_out <= 0;
                 end else begin
                     IR_out <= IR_in[`XLEN - 1 : 2];
                     PC_out <= PC_in;
+                    is_compressed_out <= is_compressed_in;
 
                     if (|IR_in == 1'b0 || &IR_in == 1'b1)
                         illegal <= 1'b1;

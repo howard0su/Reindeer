@@ -103,7 +103,11 @@ module PulseRain_RV2T_core (
         wire                                            fetch_enable_out;
         wire  [`XLEN - 1 : 0]                           fetch_IR_out;
         wire  [`PC_BITWIDTH - 1 : 0]                    fetch_PC_out;
-    
+
+        wire  [`XLEN - 1 : 2]                           uncompress_IR_out;
+        wire                                            uncompress_is_compressed;
+        wire                                            uncompress_illegal_instr;
+
         wire                                            fetch_read_mem_enable;
         wire  [`PC_BITWIDTH - 1 : 0]                    fetch_read_mem_addr;
         
@@ -114,7 +118,8 @@ module PulseRain_RV2T_core (
         
         wire  [`XLEN - 1 : 2]                           decode_IR_out ;
         wire  [`PC_BITWIDTH - 1 : 0]                    decode_PC_out ;
-        
+        wire                                            decode_is_compress;
+
         wire  [`CSR_BITS - 1 : 0]                       decode_csr;
         wire                                            decode_csr_enable;
         
@@ -376,6 +381,16 @@ module PulseRain_RV2T_core (
                 .read_mem_addr (fetch_read_mem_addr));
 
         //---------------------------------------------------------------------
+        // compressed instruction decode
+        //---------------------------------------------------------------------
+            RV2T_compressed_decode RV2T_compressed_decode_i (
+                .instr_i (fetch_IR_out),
+                .instr_o (uncompress_IR_out),
+                .is_compressed_o (uncompress_is_compressed),
+                .illegal_instr_o (uncompress_illegal_instr)
+            );
+
+        //---------------------------------------------------------------------
         // instruction decode
         //---------------------------------------------------------------------
             RV2T_instruction_decode RV2T_instruction_decode_i (
@@ -386,8 +401,9 @@ module PulseRain_RV2T_core (
                 .decode_enable (decode_enable),
                                     
                 .enable_in (fetch_enable_out),
-                .IR_in (fetch_IR_out),
+                .IR_in (uncompress_IR_out),
                 .PC_in (fetch_PC_out),
+                .is_compressed_in (uncompress_is_compressed),
                 
                 .rs1 (rs1),
                 .rs2 (rs2),
@@ -419,7 +435,8 @@ module PulseRain_RV2T_core (
                 .ctl_MRET                        (decode_ctl_MRET),
                 .ctl_WFI                         (decode_ctl_WFI),
 
-                .exception_illegal_instruction   (decode_exception_illegal_instruction));
+                .exception_illegal_instruction   (decode_exception_illegal_instruction),
+                .is_compressed_out               (decode_is_compress));
                 
         //---------------------------------------------------------------------
         // execution unit
@@ -457,6 +474,7 @@ module PulseRain_RV2T_core (
                 .rs2_in (reg_file_read_rs2_data_out),
 
                 .csr_in (csr_read_data_out),
+                .is_compressed          (decode_is_compress),
          
                 .enable_out (),
                 .rd_addr_out (exe_rd_addr_out),
@@ -602,7 +620,7 @@ module PulseRain_RV2T_core (
                 .activate_exception           (activate_exception),
                 .exception_PC                 (exception_PC),
                 .exception_addr               (exception_addr),
-                .exception_illegal_instruction (decode_exception_illegal_instruction | csr_exception_illegal_instruction),
+                .exception_illegal_instruction (decode_exception_illegal_instruction | csr_exception_illegal_instruction || uncompress_illegal_instr),
                 .paused                       (paused)
                 
                 );

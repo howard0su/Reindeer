@@ -64,6 +64,7 @@ module RV2T_execution_unit (
         
         input wire                                              ctl_MUL_DIV_FUNCT3,
         
+        input wire                                              is_compressed,
      //=====================================================================
      // interface for the register file
      //=====================================================================
@@ -175,6 +176,7 @@ module RV2T_execution_unit (
         wire                                                    mul_div_enable;
         
         reg  [31 : 0]                                           mul_div_out_reg;
+        wire [31 : 0]                                           Next_PC;
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // data path
@@ -189,6 +191,8 @@ module RV2T_execution_unit (
             assign J_immediate = {{12{IR_in[31]}},IR_in[19:12], IR_in[20], IR_in[30:25], IR_in[24:21], 1'b0};
 
             assign shamt = Y [4 : 0];
+
+            assign Next_PC = is_compressed? PC_in + 2 : PC_in + 4;
         //---------------------------------------------------------------------
         //  funct3
         //---------------------------------------------------------------------
@@ -412,7 +416,7 @@ module RV2T_execution_unit (
                 end else if (exe_enable) begin
                     jal_active <= ctl_JAL | ctl_MISC_MEM;
                     if (ctl_MISC_MEM) begin
-                        jal_addr   <= PC_in + 4;
+                        jal_addr   <= Next_PC;
                     end else begin
                         jal_addr   <= PC_in + J_immediate;
                     end
@@ -572,7 +576,7 @@ module RV2T_execution_unit (
                     end
                     
                     reg_ctl_JAL | reg_ctl_JALR : begin
-                        data_out = PC_out + 4;
+                        data_out = Next_PC;
                     end
                     
                     mul_div_done : begin
