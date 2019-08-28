@@ -39,8 +39,10 @@ module RV2T_instruction_decode (
      // interface for the instruction fetch
      //=====================================================================
         input wire                                              enable_in,
-        input wire [`XLEN - 1 : 0]                              IR_in,
+        input wire [`XLEN - 1 : 2]                              IR_in,
         input wire [`PC_BITWIDTH - 1 : 0]                       PC_in,
+        input wire                                              is_compressed_in,
+        input wire                                              exception_illegal_instr_in,
 
      //=====================================================================
      // interface for register read
@@ -82,7 +84,8 @@ module RV2T_instruction_decode (
         output reg                                              ctl_MRET,
         output reg                                              ctl_WFI,
 
-        output reg                                              exception_illegal_instruction
+        output reg                                              exception_illegal_instruction,
+        output reg                                              is_compressed_out
 );
     
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -95,7 +98,7 @@ module RV2T_instruction_decode (
         wire    [2 : 0]                                         funct3;
         wire    [11 : 0]                                        funct12;
         reg                                                     illegal;
-        
+
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     // data path
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -116,14 +119,14 @@ module RV2T_instruction_decode (
         // function fields
         //---------------------------------------------------------------------
 
-            assign funct3  = IR_in [14 : 12];
-            assign funct12 = IR_in [31 : 20];
+            assign funct3  = IR_out [14 : 12];
+            assign funct12 = IR_out [31 : 20];
 
         //---------------------------------------------------------------------
         // CSR read
         //---------------------------------------------------------------------
 
-            assign csr     = IR_in [31 : 20];
+            assign csr     = IR_out [31 : 20];
 
             always @(*) begin : csr_read_enable_proc
                 csr_read_enable = ctl_CSR;
@@ -140,14 +143,16 @@ module RV2T_instruction_decode (
                     IR_out <= 0;
                     PC_out <= 0;
                     illegal <= 0;
+                    is_compressed_out <= 0;
                 end else begin
                     IR_out <= IR_in[`XLEN - 1 : 2];
                     PC_out <= PC_in;
+                    is_compressed_out <= is_compressed_in;
 
                     if (|IR_in == 1'b0 || &IR_in == 1'b1)
                         illegal <= 1'b1;
                     else
-                        illegal <= 1'b0;
+                        illegal <= exception_illegal_instr_in;
                 end
             end
             
@@ -187,6 +192,14 @@ module RV2T_instruction_decode (
                         ctl_load_Y_from_imm_12 = 1'b1;
                         ctl_save_to_rd = 1'b1;
                         ctl_ALU_FUNCT3 = 1'b1;
+
+                        if (funct3 == `ALU_SLL && IR_out[31:25] != 7'b0) begin
+                            exception_illegal_instruction = 1'b1;
+                        end
+
+                        if (funct3 == `ALU_SRL_SRA && (IR_out[31] != 1'b0 || IR_out[29:25] != 5'b0 )) begin
+                            exception_illegal_instruction = 1'b1;
+                        end
                     end
                         
                     `CMD_OP : begin
@@ -195,6 +208,17 @@ module RV2T_instruction_decode (
                         ctl_save_to_rd = 1'b1;
                         ctl_ALU_FUNCT3 = ~IR_out[25];
                         ctl_MUL_DIV_FUNCT3 = IR_out[25];
+
+                        if (funct3 == `ALU_SRL_SRA || funct3 == `ALU_ADD_SUB) begin
+                            if (IR_out[31] != 1'b0 || IR_out[29:26] != 4'b0 ) begin
+                                exception_illegal_instruction = 1'b1;
+                            end
+                        end else begin
+                            if (IR_out[31:26] != 6'b0) begin
+                                exception_illegal_instruction = 1'b1;
+                            end
+                        end
+
                     end
                         
                     `CMD_LUI : begin
