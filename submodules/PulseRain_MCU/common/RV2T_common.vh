@@ -96,6 +96,26 @@
 `define WIDTH_32_BITS       (2'b10)
 
 
+`define C_OP_C0             (2'b00)
+`define C_OP_C1             (2'b01)
+`define C_OP_C2             (2'b10)
+
+`define C_ADDI4SPN          (5'b000_00)
+`define C_LW                (5'b010_00)
+`define C_SW                (5'b110_00)
+`define C_NOP_ADDI          (5'b000_01)
+`define C_JAL               (5'b001_01)
+`define C_J                 (5'b101_01)
+`define C_LI                (5'b010_01)
+`define C_BEQZ              (5'b110_01)
+`define C_BNEZ              (5'b111_01)
+`define C_ADDI16SP_LUI      (5'b011_01)
+`define C_MISC_ALU          (5'b100_01)
+`define C_SLLI              (5'b000_10)
+`define C_SWSP              (5'b110_10)
+`define C_LWSP              (5'b010_10)
+`define C_JR_JALR_MV_ADD    (5'b100_10)
+
 //====================================================================================================================
 //  CSR (Control and Status Registers)
 //====================================================================================================================

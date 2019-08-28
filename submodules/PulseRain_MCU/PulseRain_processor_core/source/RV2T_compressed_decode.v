@@ -10,78 +10,59 @@ module RV2T_compressed_decode
   output reg         illegal_instr_o
 );
 
+  wire [2 : 0] funct3;
+  wire [1 : 0] op;
+
+  assign funct3 = instr_i[15:13];
+  assign op = instr_i[1:0];
+
+  assign is_compressed_o = (instr_i[1:0] != 2'b11);
+
   always @(*) begin
     illegal_instr_o = 1'b0;
     instr_o         = 30'b0;
 
-    case (instr_i[1:0])
-      // C0
-      2'b00: begin
-        case (instr_i[15:13])
-          3'b000: begin
+    if (~is_compressed_o) begin
+      // not a compressed instruction
+      instr_o = instr_i[31:2];
+    end else begin
+
+        case ({funct3, op})
+          `C_ADDI4SPN: begin
             // c.addi4spn -> addi rd', x2, imm
             instr_o = {2'b0, instr_i[10:7], instr_i[12:11], instr_i[5], instr_i[6], 2'b00, 5'h02, 3'b000, 2'b01, instr_i[4:2], `CMD_OP_IMM};
             if (instr_i[12:5] == 8'b0)  illegal_instr_o = 1'b1;
           end
 
-          3'b001: begin
-            // c.fld -> fld rd', imm(rs1')
-            illegal_instr_o = 1'b1;
-          end
-
-          3'b010: begin
+          `C_LW: begin
             // c.lw -> lw rd', imm(rs1')
             instr_o = {5'b0, instr_i[5], instr_i[12:10], instr_i[6], 2'b00, 2'b01, instr_i[9:7], 3'b010, 2'b01, instr_i[4:2], `CMD_LOAD};
           end
 
-          3'b011: begin
-            // c.flw -> flw rd', imm(rs1')
-            illegal_instr_o = 1'b1;
-          end
-
-          3'b101: begin
-            // c.fsd -> fsd rs2', imm(rs1')
-            illegal_instr_o = 1'b1;
-          end
-
-          3'b110: begin
+          `C_SW: begin
             // c.sw -> sw rs2', imm(rs1')
             instr_o = {5'b0, instr_i[5], instr_i[12], 2'b01, instr_i[4:2], 2'b01, instr_i[9:7], 3'b010, instr_i[11:10], instr_i[6], 2'b00, `CMD_STORE};
           end
 
-          3'b111: begin
-            // c.fsw -> fsw rs2', imm(rs1')
-            illegal_instr_o = 1'b1;
-          end
-          default: begin
-            illegal_instr_o = 1'b1;
-          end
-        endcase
-      end
-
-
-      // C1
-      2'b01: begin
-        case (instr_i[15:13])
-          3'b000: begin
+          `C_NOP_ADDI: begin
             // c.addi -> addi rd, rd, nzimm
             // c.nop
             instr_o = {{6 {instr_i[12]}}, instr_i[12], instr_i[6:2], instr_i[11:7], 3'b0, instr_i[11:7], `CMD_OP_IMM};
           end
 
-          3'b001, 3'b101: begin
+          `C_JAL, `C_J: begin
             // 001: c.jal -> jal x1, imm
             // 101: c.j   -> jal x0, imm
             instr_o = {instr_i[12], instr_i[8], instr_i[10:9], instr_i[6], instr_i[7], instr_i[2], instr_i[11], instr_i[5:3], {9 {instr_i[12]}}, 4'b0, ~instr_i[15], `CMD_JAL};
           end
 
-          3'b010: begin
+          `C_LI: begin
             // c.li -> addi rd, x0, nzimm
             instr_o = {{6 {instr_i[12]}}, instr_i[12], instr_i[6:2], 5'b0, 3'b0, instr_i[11:7], `CMD_OP_IMM};
             if (instr_i[11:7] == 5'b0)  illegal_instr_o = 1'b1;
           end
 
-          3'b011: begin
+          `C_ADDI16SP_LUI: begin
             // c.lui -> lui rd, imm
             instr_o = {{15 {instr_i[12]}}, instr_i[6:2], instr_i[11:7], `CMD_LUI};
 
@@ -92,10 +73,10 @@ module RV2T_compressed_decode
               illegal_instr_o = 1'b1;
             end
 
-            if ({instr_i[12], instr_i[6:2]} == 6'b0) illegal_instr_o = 1'b1;
+            if ({instr_i[12], instr_i[6:2]} == 6'b0)  illegal_instr_o = 1'b1;
           end
 
-          3'b100: begin
+          `C_MISC_ALU: begin
             case (instr_i[11:10])
               2'b00,
               2'b01: begin
@@ -146,41 +127,26 @@ module RV2T_compressed_decode
             endcase
           end
 
-          3'b110, 3'b111: begin
+          `C_BNEZ, `C_BEQZ: begin
             // 0: c.beqz -> beq rs1', x0, imm
             // 1: c.bnez -> bne rs1', x0, imm
             instr_o = {{4 {instr_i[12]}}, instr_i[6:5], instr_i[2], 5'b0, 2'b01, instr_i[9:7], 2'b00, instr_i[13], instr_i[11:10], instr_i[4:3], instr_i[12], `CMD_BRANCH};
           end
-        endcase
-      end
 
-      // C2
-      2'b10: begin
-        case (instr_i[15:13])
-          3'b000: begin
+          `C_SLLI: begin
             // c.slli -> slli rd, rd, shamt
             instr_o = {7'b0, instr_i[6:2], instr_i[11:7], 3'b001, instr_i[11:7], `CMD_OP_IMM};
             if (instr_i[11:7] == 5'b0)  illegal_instr_o = 1'b1;
             if (instr_i[12] == 1'b1 || instr_i[6:2] == 5'b0)  illegal_instr_o = 1'b1;
           end
 
-          3'b001: begin
-            // c.fldsp -> fld rd, imm(x2)
-            illegal_instr_o = 1'b1;
-          end
-
-          3'b010: begin
+          `C_LWSP: begin
             // c.lwsp -> lw rd, imm(x2)
             instr_o = {4'b0, instr_i[3:2], instr_i[12], instr_i[6:4], 2'b00, 5'h02, 3'b010, instr_i[11:7], `CMD_LOAD};
             if (instr_i[11:7] == 5'b0)  illegal_instr_o = 1'b1;
           end
 
-          3'b011: begin
-            // c.flwsp -> flw rd, imm(x2)
-            illegal_instr_o = 1'b1;
-          end
-
-          3'b100: begin
+          `C_JR_JALR_MV_ADD: begin
             if (instr_i[12] == 1'b0) begin
               // c.mv -> add rd/rs1, x0, rs2
               instr_o = {7'b0, instr_i[6:2], 5'b0, 3'b0, instr_i[11:7], `CMD_OP};
@@ -205,30 +171,16 @@ module RV2T_compressed_decode
             end
           end
 
-          3'b101: begin
-            // c.fsdsp -> fsd rs2, imm(x2)
-            illegal_instr_o = 1'b1;
-          end
-
-          3'b110: begin
+          `C_SWSP: begin
             // c.swsp -> sw rs2, imm(x2)
             instr_o = {4'b0, instr_i[8:7], instr_i[12], instr_i[6:2], 5'h02, 3'b010, instr_i[11:9], 2'b00, `CMD_STORE};
           end
 
-          3'b111: begin
-            // c.fswsp -> fsw rs2, imm(x2)
-            illegal_instr_o = 1'b1;
-          end
-        endcase
-      end
+        default:
+          illegal_instr_o = 1'b1;
 
-      default: begin
-        // 32 bit (or more) instruction
-        instr_o = instr_i[31:2];
-      end
-    endcase
+      endcase
+    end
   end
-
-  assign is_compressed_o = (instr_i[1:0] != 2'b11);
 
 endmodule
