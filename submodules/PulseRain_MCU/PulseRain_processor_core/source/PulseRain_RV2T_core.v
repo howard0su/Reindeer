@@ -201,6 +201,7 @@ module PulseRain_RV2T_core (
 
         wire                                            decode_exception_illegal_instruction;
         wire                                            csr_exception_illegal_instruction;
+        wire                                            exception_illegal_instruction;
         
         wire                                            activate_exception;
         wire  [`EXCEPTION_CODE_BITS - 1 : 0]            exception_code;
@@ -404,6 +405,7 @@ module PulseRain_RV2T_core (
                 .IR_in (uncompress_IR_out),
                 .PC_in (fetch_PC_out),
                 .is_compressed_in (uncompress_is_compressed),
+                .exception_illegal_instr_in (uncompress_illegal_instr),
                 
                 .rs1 (rs1),
                 .rs2 (rs2),
@@ -469,7 +471,8 @@ module PulseRain_RV2T_core (
                 .ctl_MISC_MEM           (decode_ctl_MISC_MEM),
                 .ctl_MRET               (decode_ctl_MRET),
                 .ctl_MUL_DIV_FUNCT3     (decode_ctl_MUL_DIV_FUNCT3),
-                
+                .ctl_exception_illegal_instruction (decode_exception_illegal_instruction),
+
                 .rs1_in (reg_file_read_rs1_data_out),
                 .rs2_in (reg_file_read_rs2_data_out),
 
@@ -501,6 +504,7 @@ module PulseRain_RV2T_core (
                 .csr_addr_out      (exe_csr_addr),
                 .ecall_active      (exception_ecall),
                 .ebreak_active     (exception_ebreak),
+                .exception_illegal_instruction (exception_illegal_instruction),
                 .mret_active       (mret_active),
                 .mul_div_active    (mul_div_active),
                 .mul_div_done      (mul_div_done)
@@ -620,7 +624,7 @@ module PulseRain_RV2T_core (
                 .activate_exception           (activate_exception),
                 .exception_PC                 (exception_PC),
                 .exception_addr               (exception_addr),
-                .exception_illegal_instruction (decode_exception_illegal_instruction | csr_exception_illegal_instruction || uncompress_illegal_instr),
+                .exception_illegal_instruction (exception_illegal_instruction | csr_exception_illegal_instruction),
                 .paused                       (paused)
                 
                 );

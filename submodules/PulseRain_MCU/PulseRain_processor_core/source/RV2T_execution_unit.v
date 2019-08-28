@@ -65,6 +65,7 @@ module RV2T_execution_unit (
         input wire                                              ctl_MUL_DIV_FUNCT3,
         
         input wire                                              is_compressed,
+        input wire                                              ctl_exception_illegal_instruction,
      //=====================================================================
      // interface for the register file
      //=====================================================================
@@ -106,6 +107,7 @@ module RV2T_execution_unit (
         output reg  [`CSR_BITS - 1 : 0]                         csr_addr_out,
         output reg                                              ecall_active,
         output reg                                              ebreak_active,
+        output reg                                              exception_illegal_instruction,
         output reg                                              mret_active,
         output wire                                             mul_div_active,
         output wire                                             mul_div_done
@@ -260,6 +262,7 @@ module RV2T_execution_unit (
                         ecall_active   <= ecall_active_i & ctl_SYSTEM;
                         ebreak_active  <= ebreak_active_i & ctl_SYSTEM;
                         mret_active    <= ctl_MRET & ctl_SYSTEM;
+                        exception_illegal_instruction <= ctl_exception_illegal_instruction;
                         
                     end else begin
                         
@@ -274,6 +277,7 @@ module RV2T_execution_unit (
                         ecall_active   <= 0;
                         ebreak_active  <= 0;
                         mret_active    <= 0;
+                        exception_illegal_instruction <= 0;
                         
                     end
                 end
