@@ -1,5 +1,5 @@
 
-/home/lenovo/riscv-compliance/work//illegal.elf:     file format elf32-littleriscv
+/home/howardsu/riscv-compliance/work/rv32mi/illegal.elf:     file format elf32-littleriscv
 
 
 Disassembly of section .text.init:
@@ -98,7 +98,7 @@ Disassembly of section .text.init:
 80000134:	30032073          	csrs	mstatus,t1
 80000138:	300023f3          	csrr	t2,mstatus
 8000013c:	0053f3b3          	and	t2,t2,t0
-80000140:	0e731863          	bne	t1,t2,80000230 <pass>
+80000140:	0e731463          	bne	t1,t2,80000228 <pass>
 
 80000144 <test_vectored_interrupts>:
 80000144:	34415073          	csrwi	mip,2
@@ -170,25 +170,25 @@ Disassembly of section .text.init:
 80000204 <bad9>:
 80000204:	10200073          	sret
 80000208:	0080006f          	j	80000210 <fail>
-8000020c:	02301263          	bne	zero,gp,80000230 <pass>
+8000020c:	00301e63          	bne	zero,gp,80000228 <pass>
 
 80000210 <fail>:
 80000210:	0ff0000f          	fence
-80000214:	00018063          	beqz	gp,80000214 <fail+0x4>
-80000218:	00119193          	slli	gp,gp,0x1
-8000021c:	0011e193          	ori	gp,gp,1
-80000220:	00002e17          	auipc	t3,0x2
-80000224:	de0e0e13          	addi	t3,t3,-544 # 80002000 <begin_signature>
-80000228:	003e2023          	sw	gp,0(t3)
-8000022c:	00000073          	ecall
+80000214:	00100193          	li	gp,1
+80000218:	00002e17          	auipc	t3,0x2
+8000021c:	de8e0e13          	addi	t3,t3,-536 # 80002000 <begin_signature>
+80000220:	003e2023          	sw	gp,0(t3)
+80000224:	00000073          	ecall
 
-80000230 <pass>:
-80000230:	0ff0000f          	fence
-80000234:	00100193          	li	gp,1
-80000238:	00002e17          	auipc	t3,0x2
-8000023c:	dc8e0e13          	addi	t3,t3,-568 # 80002000 <begin_signature>
-80000240:	003e2023          	sw	gp,0(t3)
-80000244:	00000073          	ecall
+80000228 <pass>:
+80000228:	0ff0000f          	fence
+8000022c:	00100193          	li	gp,1
+80000230:	00002e17          	auipc	t3,0x2
+80000234:	dd0e0e13          	addi	t3,t3,-560 # 80002000 <begin_signature>
+80000238:	003e2023          	sw	gp,0(t3)
+8000023c:	00000073          	ecall
+80000240:	00000013          	nop
+80000244:	00000013          	nop
 80000248:	00000013          	nop
 8000024c:	00000013          	nop
 80000250:	00000013          	nop
@@ -259,7 +259,7 @@ Disassembly of section .text.init:
 80000344:	342022f3          	csrr	t0,mcause
 80000348:	ec6294e3          	bne	t0,t1,80000210 <fail>
 8000034c:	341022f3          	csrr	t0,mepc
-80000350:	343023f3          	csrr	t2,mbadaddr
+80000350:	343023f3          	csrr	t2,mtval
 80000354:	00038c63          	beqz	t2,8000036c <synchronous_exception+0x2c>
 80000358:	0002de03          	lhu	t3,0(t0)
 8000035c:	0022de83          	lhu	t4,2(t0)
@@ -400,3 +400,14 @@ Disassembly of section .data:
 8000209a:	ffff                	0xffff
 8000209c:	ffff                	0xffff
 8000209e:	ffff                	0xffff
+
+800020a0 <end_signature>:
+	...
+
+80002100 <begin_regstate>:
+80002100:	0080                	addi	s0,sp,64
+	...
+
+80002200 <end_regstate>:
+80002200:	0004                	0x4
+	...

@@ -160,8 +160,17 @@ slti \
 xori \
 bltu \
 lw \
-sltiu
+sltiu \
+csr \
+illegal \
+ma_addr \
+mcsr \
+sbreak \
+scall \
+shamt \
 
+#breakpoint \
+#ma_fetch \
 
 rv32u_test_cases = illegal
 
