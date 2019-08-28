@@ -41,6 +41,7 @@ src_sub = \
 ../PulseRain_processor_core/source/RV2T_execution_unit \
 ../PulseRain_processor_core/source/RV2T_fetch_instruction \
 ../PulseRain_processor_core/source/RV2T_instruction_decode \
+../PulseRain_processor_core/source/RV2T_compressed_decode \
 ../PulseRain_processor_core/source/RV2T_machine_timer \
 ../PulseRain_processor_core/source/RV2T_memory \
 ../PulseRain_processor_core/source/RV2T_mm_reg \

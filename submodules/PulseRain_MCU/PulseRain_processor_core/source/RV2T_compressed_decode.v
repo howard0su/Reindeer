@@ -12,7 +12,7 @@ module RV2T_compressed_decode
 
   always @(*) begin
     illegal_instr_o = 1'b0;
-    instr_o         = '0;
+    instr_o         = 1'b0;
 
     case (instr_i[1:0])
       // C0
